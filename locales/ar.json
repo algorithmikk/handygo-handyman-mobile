@@ -1,0 +1,85 @@
+{
+  "app": { "name": "HandyGo", "tagline": "صيانة عند الطلب" },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "phone": "رقم الهاتف",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "noAccount": "ليس لديك حساب؟",
+    "hasAccount": "لديك حساب بالفعل؟",
+    "loginError": "بريد إلكتروني أو كلمة مرور غير صالحة",
+    "signupError": "فشل التسجيل"
+  },
+  "home": {
+    "online": "متصل",
+    "offline": "غير متصل",
+    "pending": "قيد الانتظار",
+    "completed": "مكتمل",
+    "earnings": "الأرباح",
+    "todayAED": "درهم اليوم",
+    "activeJob": "المهمة النشطة",
+    "availableJobs": "المهام المتاحة",
+    "noJobs": "لا توجد مهام معلقة",
+    "noJobsDesc": "ستظهر المهام الجديدة هنا",
+    "callTenant": "اتصل بالمستأجر",
+    "navigate": "التنقل",
+    "markComplete": "وضع علامة مكتمل",
+    "acceptJob": "قبول المهمة"
+  },
+  "map": {
+    "title": "خريطة المهام",
+    "yourLocation": "موقعك",
+    "jobLocations": "مواقع المهام",
+    "distance": "{{distance}} كم",
+    "travelTime": "~{{time}} دقيقة"
+  },
+  "jobs": {
+    "title": "المهام",
+    "available": "متاحة",
+    "active": "نشطة",
+    "history": "السجل",
+    "accept": "قبول",
+    "decline": "رفض",
+    "start": "بدء المهمة",
+    "complete": "إكمال المهمة",
+    "details": "تفاصيل المهمة",
+    "tenant": "المستأجر",
+    "address": "العنوان",
+    "description": "الوصف",
+    "photos": "الصور",
+    "estimatedCost": "التكلفة المقدرة",
+    "noJobs": "لا توجد مهام"
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "services": "الخدمات",
+    "rating": "التقييم",
+    "jobsCompleted": "المهام المكتملة",
+    "memberSince": "عضو منذ",
+    "editProfile": "تعديل الملف",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج",
+    "notifications": "الإشعارات",
+    "language": "اللغة"
+  },
+  "categories": {
+    "plumbing": "سباكة",
+    "electrical": "كهرباء",
+    "ac": "تكييف",
+    "general": "عام"
+  },
+  "status": {
+    "pending": "قيد الانتظار",
+    "assigned": "تم التعيين",
+    "accepted": "مقبول",
+    "in_progress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "cancelled": "ملغى"
+  }
+}
+

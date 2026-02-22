@@ -1,0 +1,77 @@
+{
+  "expo": {
+    "name": "HandyGo Technician",
+    "slug": "handygo-handyman-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "handygo-handyman",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.handygo.technician",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "HandyGo needs your location to show nearby jobs and provide navigation to job sites.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "HandyGo uses your location in the background to update your availability and match you with nearby jobs.",
+        "NSCameraUsageDescription": "HandyGo needs camera access to take photos of completed work.",
+        "NSPhotoLibraryUsageDescription": "HandyGo needs photo library access to upload job completion photos."
+      }
+    },
+    "android": {
+      "package": "com.handygo.technician",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "HandyGo uses your location to match you with nearby maintenance jobs and provide navigation."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#10b981"
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "HandyGo needs access to your photos to upload job completion images.",
+          "cameraPermission": "HandyGo needs camera access to take photos of completed work."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

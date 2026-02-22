@@ -1,0 +1,85 @@
+{
+  "app": { "name": "HandyGo", "tagline": "On-Demand Maintenance" },
+  "auth": {
+    "login": "Sign In",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phone": "Phone Number",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginError": "Invalid email or password",
+    "signupError": "Registration failed"
+  },
+  "home": {
+    "online": "Online",
+    "offline": "Offline",
+    "pending": "Pending",
+    "completed": "Completed",
+    "earnings": "Earnings",
+    "todayAED": "AED Today",
+    "activeJob": "Active Job",
+    "availableJobs": "Available Jobs",
+    "noJobs": "No pending jobs",
+    "noJobsDesc": "New jobs will appear here",
+    "callTenant": "Call Tenant",
+    "navigate": "Navigate",
+    "markComplete": "Mark as Complete",
+    "acceptJob": "Accept Job"
+  },
+  "map": {
+    "title": "Job Map",
+    "yourLocation": "Your Location",
+    "jobLocations": "Job Locations",
+    "distance": "{{distance}} km away",
+    "travelTime": "~{{time}} min"
+  },
+  "jobs": {
+    "title": "Jobs",
+    "available": "Available",
+    "active": "Active",
+    "history": "History",
+    "accept": "Accept",
+    "decline": "Decline",
+    "start": "Start Job",
+    "complete": "Complete Job",
+    "details": "Job Details",
+    "tenant": "Tenant",
+    "address": "Address",
+    "description": "Description",
+    "photos": "Photos",
+    "estimatedCost": "Estimated Cost",
+    "noJobs": "No jobs found"
+  },
+  "profile": {
+    "title": "Profile",
+    "services": "Services",
+    "rating": "Rating",
+    "jobsCompleted": "Jobs Completed",
+    "memberSince": "Member Since",
+    "editProfile": "Edit Profile",
+    "settings": "Settings",
+    "logout": "Log Out",
+    "notifications": "Notifications",
+    "language": "Language"
+  },
+  "categories": {
+    "plumbing": "Plumbing",
+    "electrical": "Electrical",
+    "ac": "AC / HVAC",
+    "general": "General"
+  },
+  "status": {
+    "pending": "Pending",
+    "assigned": "Assigned",
+    "accepted": "Accepted",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  }
+}
+
