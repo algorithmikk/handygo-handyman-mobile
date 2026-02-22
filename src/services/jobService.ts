@@ -38,8 +38,12 @@ export const jobService = {
     try {
       const token = await authService.getToken();
       const response = await api.get<any[]>('/jobs/available', token);
+      console.log('[JobService] getAvailableJobs response:', response.data?.length, response.error);
       if (response.data && !response.error) return response.data.map(mapJob);
-    } catch (e) { /* fallback */ }
+    } catch (e) {
+      console.error('[JobService] getAvailableJobs error:', e);
+    }
+    console.log('[JobService] getAvailableJobs: falling back to mock');
     return mockRequests.filter((r) => r.status === 'pending');
   },
 
@@ -47,11 +51,16 @@ export const jobService = {
     try {
       const token = await authService.getToken();
       const handymanId = await getHandymanId();
+      console.log('[JobService] getActiveJobs handymanId =', handymanId);
       if (handymanId) {
         const response = await api.get<any[]>(`/jobs/handyman/${handymanId}/active`, token);
+        console.log('[JobService] getActiveJobs response:', response.data?.length, response.error);
         if (response.data && !response.error) return response.data.map(mapJob);
       }
-    } catch (e) { /* fallback */ }
+    } catch (e) {
+      console.error('[JobService] getActiveJobs error:', e);
+    }
+    console.log('[JobService] getActiveJobs: falling back to mock');
     return mockRequests.filter((r) =>
       ['assigned', 'accepted', 'in_progress'].includes(r.status)
     );
@@ -61,13 +70,18 @@ export const jobService = {
     try {
       const token = await authService.getToken();
       const handymanId = await getHandymanId();
+      console.log('[JobService] getCompletedJobs handymanId =', handymanId);
       if (handymanId) {
         const response = await api.get<any[]>(`/jobs/handyman/${handymanId}`, token);
+        console.log('[JobService] getCompletedJobs response:', response.data?.length, response.error);
         if (response.data && !response.error) {
           return response.data.map(mapJob).filter((j) => j.status === 'completed');
         }
       }
-    } catch (e) { /* fallback */ }
+    } catch (e) {
+      console.error('[JobService] getCompletedJobs error:', e);
+    }
+    console.log('[JobService] getCompletedJobs: falling back to mock');
     return mockRequests.filter((r) => r.status === 'completed');
   },
 
