@@ -2,7 +2,7 @@
 
 import { api } from '../lib/api';
 import { mockRequests } from '../lib/mockData';
-import type { MaintenanceRequest, Job, HandymanStats } from '../types';
+import type { MaintenanceRequest, Job, HandymanStats, ServiceCategory, JobStatus } from '../types';
 import { authService } from './authService';
 
 // Helper to get stored user ID for handyman-specific endpoints
@@ -11,12 +11,34 @@ async function getHandymanId(): Promise<string | null> {
   return user?.id || null;
 }
 
+// Map backend Job response to frontend MaintenanceRequest type
+function mapJob(r: any): MaintenanceRequest {
+  return {
+    id: r.jobId || r.requestId || r.id || '',
+    tenantId: r.tenantId || '',
+    tenantName: r.tenantName || '',
+    tenantPhone: r.tenantPhone || '',
+    propertyAddress: r.location?.address || r.propertyAddress || r.buildingName || '',
+    category: ((r.category || 'general').toLowerCase().replace('ac_hvac', 'ac')) as ServiceCategory,
+    description: r.description || r.title || '',
+    images: r.photoUrls || r.images || [],
+    status: (r.status || 'pending').toLowerCase().replace(/ /g, '_') as JobStatus,
+    createdAt: r.createdAt || new Date().toISOString(),
+    assignedHandymanId: r.handymanId || r.assignedHandymanId,
+    assignedHandymanName: r.handymanName || r.assignedHandymanName,
+    lat: r.location?.latitude || r.lat || 25.2048,
+    lng: r.location?.longitude || r.lng || 55.2708,
+    estimatedCost: r.quotedAmount || r.finalAmount || r.estimatedCost,
+    completedAt: r.completedAt,
+  };
+}
+
 export const jobService = {
   async getAvailableJobs(): Promise<MaintenanceRequest[]> {
     try {
       const token = await authService.getToken();
-      const response = await api.get<MaintenanceRequest[]>('/jobs/available', token);
-      if (response.data && !response.error) return response.data;
+      const response = await api.get<any[]>('/jobs/available', token);
+      if (response.data && !response.error) return response.data.map(mapJob);
     } catch (e) { /* fallback */ }
     return mockRequests.filter((r) => r.status === 'pending');
   },
@@ -26,8 +48,8 @@ export const jobService = {
       const token = await authService.getToken();
       const handymanId = await getHandymanId();
       if (handymanId) {
-        const response = await api.get<MaintenanceRequest[]>(`/jobs/handyman/${handymanId}/active`, token);
-        if (response.data && !response.error) return response.data;
+        const response = await api.get<any[]>(`/jobs/handyman/${handymanId}/active`, token);
+        if (response.data && !response.error) return response.data.map(mapJob);
       }
     } catch (e) { /* fallback */ }
     return mockRequests.filter((r) =>
@@ -40,9 +62,9 @@ export const jobService = {
       const token = await authService.getToken();
       const handymanId = await getHandymanId();
       if (handymanId) {
-        const response = await api.get<MaintenanceRequest[]>(`/jobs/handyman/${handymanId}`, token);
+        const response = await api.get<any[]>(`/jobs/handyman/${handymanId}`, token);
         if (response.data && !response.error) {
-          return response.data.filter((j: any) => j.status === 'completed' || j.status === 'COMPLETED');
+          return response.data.map(mapJob).filter((j) => j.status === 'completed');
         }
       }
     } catch (e) { /* fallback */ }
@@ -52,8 +74,8 @@ export const jobService = {
   async getJobById(jobId: string): Promise<MaintenanceRequest | null> {
     try {
       const token = await authService.getToken();
-      const response = await api.get<MaintenanceRequest>(`/jobs/${jobId}`, token);
-      if (response.data && !response.error) return response.data;
+      const response = await api.get<any>(`/jobs/${jobId}`, token);
+      if (response.data && !response.error) return mapJob(response.data);
     } catch (e) { /* fallback */ }
     return mockRequests.find((r) => r.id === jobId) || null;
   },
