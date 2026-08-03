@@ -42,7 +42,9 @@ export const notificationService = {
     // Get Expo push token
     try {
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'handygo-handyman-mobile', // Replace with actual Expo project ID
+        projectId:
+          process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
+          'handygo-handyman-mobile',
       });
       console.log('Push token:', tokenData.data);
       return tokenData.data;

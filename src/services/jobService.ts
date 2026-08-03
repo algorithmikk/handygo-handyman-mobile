@@ -1,17 +1,12 @@
-// Job Service for HandyGo Handyman Mobile App
-
 import { api } from '../lib/api';
-import { mockRequests } from '../lib/mockData';
-import type { MaintenanceRequest, Job, HandymanStats, ServiceCategory, JobStatus } from '../types';
+import type { MaintenanceRequest, HandymanStats, ServiceCategory, JobStatus } from '../types';
 import { authService } from './authService';
 
-// Helper to get stored user ID for handyman-specific endpoints
-async function getHandymanId(): Promise<string | null> {
-  const user = await authService.getStoredUser();
+async function getHandymanUserId(): Promise<string | null> {
+  const user = await authService.getUser();
   return user?.id || null;
 }
 
-// Map backend Job response to frontend MaintenanceRequest type
 function mapJob(r: any): MaintenanceRequest {
   return {
     id: r.jobId || r.requestId || r.id || '',
@@ -35,128 +30,108 @@ function mapJob(r: any): MaintenanceRequest {
 
 export const jobService = {
   async getAvailableJobs(): Promise<MaintenanceRequest[]> {
-    try {
-      const token = await authService.getToken();
-      const response = await api.get<any[]>('/jobs/available', token);
-      console.log('[JobService] getAvailableJobs response:', response.data?.length, response.error);
-      if (response.data && !response.error) return response.data.map(mapJob);
-    } catch (e) {
-      console.error('[JobService] getAvailableJobs error:', e);
+    const token = await authService.getToken();
+    const response = await api.get<any[]>('/jobs/available', token);
+    if (response.error || !response.data) {
+      throw new Error(response.error || 'Failed to load available jobs');
     }
-    console.log('[JobService] getAvailableJobs: falling back to mock');
-    return mockRequests.filter((r) => r.status === 'pending');
+    return response.data.map(mapJob);
   },
 
   async getActiveJobs(): Promise<MaintenanceRequest[]> {
-    try {
-      const token = await authService.getToken();
-      const handymanId = await getHandymanId();
-      console.log('[JobService] getActiveJobs handymanId =', handymanId);
-      if (handymanId) {
-        const response = await api.get<any[]>(`/jobs/handyman/${handymanId}/active`, token);
-        console.log('[JobService] getActiveJobs response:', response.data?.length, response.error);
-        if (response.data && !response.error) return response.data.map(mapJob);
-      }
-    } catch (e) {
-      console.error('[JobService] getActiveJobs error:', e);
+    const token = await authService.getToken();
+    const profile = await api.get<any>('/handymen/profile', token);
+    const handymanId = profile.data?.handymanId;
+    if (!handymanId) throw new Error('Handyman profile not found');
+    const response = await api.get<any[]>(`/jobs/handyman/${handymanId}/active`, token);
+    if (response.error || !response.data) {
+      throw new Error(response.error || 'Failed to load active jobs');
     }
-    console.log('[JobService] getActiveJobs: falling back to mock');
-    return mockRequests.filter((r) =>
-      ['assigned', 'accepted', 'in_progress'].includes(r.status)
-    );
+    return response.data.map(mapJob);
   },
 
   async getCompletedJobs(): Promise<MaintenanceRequest[]> {
-    try {
-      const token = await authService.getToken();
-      const handymanId = await getHandymanId();
-      console.log('[JobService] getCompletedJobs handymanId =', handymanId);
-      if (handymanId) {
-        const response = await api.get<any[]>(`/jobs/handyman/${handymanId}`, token);
-        console.log('[JobService] getCompletedJobs response:', response.data?.length, response.error);
-        if (response.data && !response.error) {
-          return response.data.map(mapJob).filter((j) => j.status === 'completed');
-        }
-      }
-    } catch (e) {
-      console.error('[JobService] getCompletedJobs error:', e);
+    const token = await authService.getToken();
+    const profile = await api.get<any>('/handymen/profile', token);
+    const handymanId = profile.data?.handymanId;
+    if (!handymanId) throw new Error('Handyman profile not found');
+    const response = await api.get<any[]>(`/jobs/handyman/${handymanId}`, token);
+    if (response.error || !response.data) {
+      throw new Error(response.error || 'Failed to load jobs');
     }
-    console.log('[JobService] getCompletedJobs: falling back to mock');
-    return mockRequests.filter((r) => r.status === 'completed');
+    return response.data.map(mapJob).filter((j) => j.status === 'completed');
   },
 
   async getJobById(jobId: string): Promise<MaintenanceRequest | null> {
-    try {
-      const token = await authService.getToken();
-      const response = await api.get<any>(`/jobs/${jobId}`, token);
-      if (response.data && !response.error) return mapJob(response.data);
-    } catch (e) { /* fallback */ }
-    return mockRequests.find((r) => r.id === jobId) || null;
+    const token = await authService.getToken();
+    const response = await api.get<any>(`/jobs/${jobId}`, token);
+    if (response.error || !response.data) return null;
+    return mapJob(response.data);
   },
 
   async acceptJob(jobId: string): Promise<boolean> {
-    try {
-      const token = await authService.getToken();
-      const response = await api.post(`/jobs/${jobId}/accept`, {}, token);
-      if (!response.error) return true;
-    } catch (e) { /* fallback */ }
-    const job = mockRequests.find((r) => r.id === jobId);
-    if (job) { job.status = 'accepted'; return true; }
-    return false;
+    const token = await authService.getToken();
+    const response = await api.post(`/jobs/${jobId}/accept`, {}, token);
+    if (response.error) throw new Error(response.error);
+    return true;
   },
 
   async declineJob(jobId: string): Promise<boolean> {
-    try {
-      const token = await authService.getToken();
-      const response = await api.post(`/jobs/${jobId}/decline`, {}, token);
-      if (!response.error) return true;
-    } catch (e) { /* fallback */ }
+    const token = await authService.getToken();
+    const response = await api.post(`/jobs/${jobId}/decline`, {}, token);
+    if (response.error) throw new Error(response.error);
     return true;
   },
 
   async startJob(jobId: string): Promise<boolean> {
-    try {
-      const token = await authService.getToken();
-      const response = await api.post(`/jobs/${jobId}/start`, {}, token);
-      if (!response.error) return true;
-    } catch (e) { /* fallback */ }
-    const job = mockRequests.find((r) => r.id === jobId);
-    if (job) { job.status = 'in_progress'; return true; }
-    return false;
+    const token = await authService.getToken();
+    await api.post(`/jobs/${jobId}/en-route`, {}, token);
+    const response = await api.post(`/jobs/${jobId}/start`, {}, token);
+    if (response.error) throw new Error(response.error);
+    return true;
   },
 
-  async completeJob(jobId: string): Promise<boolean> {
-    try {
-      const token = await authService.getToken();
-      const response = await api.post(`/jobs/${jobId}/complete`, {}, token);
-      if (!response.error) return true;
-    } catch (e) { /* fallback */ }
-    const job = mockRequests.find((r) => r.id === jobId);
-    if (job) { job.status = 'completed'; job.completedAt = new Date().toISOString(); return true; }
-    return false;
+  async completeJob(
+    jobId: string,
+    finalAmount?: number,
+    paymentMethod: string = 'CASH',
+  ): Promise<boolean> {
+    const token = await authService.getToken();
+    const response = await api.post(
+      `/jobs/${jobId}/complete`,
+      { finalAmount, paymentMethod },
+      token,
+    );
+    if (response.error) throw new Error(response.error);
+    return true;
   },
 
   async getStats(): Promise<HandymanStats> {
-    // No direct /stats endpoint — aggregate from mock data
+    const active = await this.getActiveJobs().catch(() => []);
+    const completed = await this.getCompletedJobs().catch(() => []);
     return {
-      pendingJobs: mockRequests.filter((r) => r.status === 'pending').length,
-      completedToday: 3,
-      earningsToday: 850,
-      rating: 4.8,
-      totalCompleted: 127,
+      pendingJobs: active.length,
+      completedToday: completed.filter((j) => {
+        if (!j.completedAt) return false;
+        const d = new Date(j.completedAt);
+        const now = new Date();
+        return d.toDateString() === now.toDateString();
+      }).length,
+      earningsToday: 0,
+      rating: 0,
+      totalCompleted: completed.length,
     };
   },
 
   async updateAvailability(available: boolean): Promise<boolean> {
-    try {
-      const token = await authService.getToken();
-      const handymanId = await getHandymanId();
-      if (handymanId) {
-        const response = await api.put(`/handymen/${handymanId}`, { available }, token);
-        if (!response.error) return true;
-      }
-    } catch (e) { /* fallback */ }
-    return true; // Mock always succeeds
+    const token = await authService.getToken();
+    const response = await api.put('/handymen/availability', { available }, token);
+    if (response.error) throw new Error(response.error);
+    return true;
+  },
+
+  async registerPushToken(pushToken: string): Promise<void> {
+    const token = await authService.getToken();
+    await api.put('/handymen/profile', { pushToken }, token);
   },
 };
-
