@@ -69,11 +69,15 @@ export interface SignupRequest {
   password: string;
   firstName: string;
   lastName: string;
-  phone: string;
+  phone?: string;
   phoneNumber?: string;
   services?: ServiceCategory[];
   serviceCategories?: string[];
   licenseNumber?: string;
+  licenseExpiry?: string;
+  emiratesId?: string;
+  emiratesIdDocUrl?: string;
+  licenseDocUrl?: string;
   bio?: string;
 }
 export interface AuthResponse { token: string; user: User; handyman?: Handyman; }

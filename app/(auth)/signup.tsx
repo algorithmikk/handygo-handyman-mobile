@@ -25,6 +25,9 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [selectedServices, setSelectedServices] = useState<ServiceCategory[]>([]);
+  const [emiratesId, setEmiratesId] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [licenseExpiry, setLicenseExpiry] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,10 +46,24 @@ export default function SignupScreen() {
       setError('Please select at least one service');
       return;
     }
+    if (!emiratesId || !licenseNumber) {
+      setError('Emirates ID and license number are required');
+      return;
+    }
     setError('');
     setIsLoading(true);
     try {
-      await signup({ firstName, lastName, email, phone, password, services: selectedServices });
+      await signup({
+        firstName,
+        lastName,
+        email,
+        phoneNumber: phone,
+        password,
+        serviceCategories: selectedServices,
+        emiratesId,
+        licenseNumber,
+        licenseExpiry: licenseExpiry || undefined,
+      });
       router.replace('/(tabs)');
     } catch (err) {
       setError(t('auth.signupError'));
@@ -96,6 +113,35 @@ export default function SignupScreen() {
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
                 {showPassword ? <EyeOff size={20} color={Colors.gray[400]} /> : <Eye size={20} color={Colors.gray[400]} />}
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Emirates ID"
+                placeholderTextColor={Colors.gray[400]}
+                value={emiratesId}
+                onChangeText={setEmiratesId}
+                autoCapitalize="characters"
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Trade / technician license number"
+                placeholderTextColor={Colors.gray[400]}
+                value={licenseNumber}
+                onChangeText={setLicenseNumber}
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="License expiry (YYYY-MM-DD)"
+                placeholderTextColor={Colors.gray[400]}
+                value={licenseExpiry}
+                onChangeText={setLicenseExpiry}
+              />
             </View>
 
             {/* Service Selection */}

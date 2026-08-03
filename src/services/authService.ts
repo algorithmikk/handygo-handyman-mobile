@@ -32,7 +32,18 @@ export const authService = {
 
   async signup(data: SignupRequest): Promise<{ user: User; token: string }> {
     const response = await api.post<any>('/auth/register', {
-      ...data,
+      email: data.email,
+      password: data.password,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phoneNumber: data.phoneNumber || data.phone,
+      serviceCategories: data.serviceCategories || data.services || [],
+      licenseNumber: data.licenseNumber,
+      licenseExpiry: data.licenseExpiry,
+      emiratesId: data.emiratesId,
+      emiratesIdDocUrl: data.emiratesIdDocUrl,
+      licenseDocUrl: data.licenseDocUrl,
+      bio: data.bio,
       role: 'HANDYMAN',
     });
     if (response.error || !response.data) {
