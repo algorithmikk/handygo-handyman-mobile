@@ -2,6 +2,7 @@
 
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';
+import { api } from '../lib/api';
 
 export interface LocationCoords {
   latitude: number;
@@ -21,7 +22,6 @@ export const locationService = {
    * Request background location permission (for when handyman is online)
    */
   async requestBackgroundPermission(): Promise<boolean> {
-    // First ensure foreground is granted
     const foreground = await this.requestForegroundPermission();
     if (!foreground) return false;
 
@@ -29,7 +29,6 @@ export const locationService = {
       const { status } = await Location.requestBackgroundPermissionsAsync();
       return status === 'granted';
     }
-    // iOS handles this through the plist permission strings
     return true;
   },
 
@@ -56,11 +55,48 @@ export const locationService = {
   },
 
   /**
+   * Reverse geocode coordinates to a readable address string.
+   */
+  async resolveAddress(coords: LocationCoords): Promise<string> {
+    try {
+      const [geo] = await Location.reverseGeocodeAsync(coords);
+      if (!geo) return '';
+      return [geo.street, geo.city, geo.region].filter(Boolean).join(', ');
+    } catch {
+      return '';
+    }
+  },
+
+  /**
+   * Push current location to the server for job matching.
+   */
+  async updateServerLocation(token: string): Promise<boolean> {
+    const coords = await this.getCurrentLocation();
+    if (!coords) return false;
+
+    const address = await this.resolveAddress(coords);
+    const response = await api.put(
+      '/handymen/location',
+      {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        address,
+      },
+      token,
+    );
+    if (response.error) {
+      console.warn('Failed to update server location:', response.error);
+      return false;
+    }
+    return true;
+  },
+
+  /**
    * Watch location changes (for real-time tracking when on a job)
    */
   async watchLocation(
     callback: (coords: LocationCoords) => void,
-    options?: { distanceInterval?: number; timeInterval?: number }
+    options?: { distanceInterval?: number; timeInterval?: number },
   ): Promise<Location.LocationSubscription | null> {
     try {
       const hasPermission = await this.requestForegroundPermission();
@@ -69,15 +105,15 @@ export const locationService = {
       return await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
-          distanceInterval: options?.distanceInterval || 50, // meters
-          timeInterval: options?.timeInterval || 10000, // ms
+          distanceInterval: options?.distanceInterval || 50,
+          timeInterval: options?.timeInterval || 10000,
         },
         (location) => {
           callback({
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
           });
-        }
+        },
       );
     } catch (e) {
       console.error('Failed to watch location:', e);
@@ -89,7 +125,7 @@ export const locationService = {
    * Calculate distance between two coordinates (Haversine formula)
    */
   calculateDistance(from: LocationCoords, to: LocationCoords): number {
-    const R = 6371; // Earth's radius in km
+    const R = 6371;
     const dLat = ((to.latitude - from.latitude) * Math.PI) / 180;
     const dLng = ((to.longitude - from.longitude) * Math.PI) / 180;
     const a =
@@ -99,7 +135,6 @@ export const locationService = {
         Math.sin(dLng / 2) *
         Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c * 10) / 10; // Round to 1 decimal
+    return Math.round(R * c * 10) / 10;
   },
 };
-

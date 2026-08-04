@@ -1,0 +1,4 @@
+appId: com.handygo.technician
+---
+- launchApp
+- assertVisible: ".*"

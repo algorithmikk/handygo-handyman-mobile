@@ -2,11 +2,6 @@ import { api } from '../lib/api';
 import type { MaintenanceRequest, HandymanStats, ServiceCategory, JobStatus } from '../types';
 import { authService } from './authService';
 
-async function getHandymanUserId(): Promise<string | null> {
-  const user = await authService.getUser();
-  return user?.id || null;
-}
-
 function mapJob(r: any): MaintenanceRequest {
   return {
     id: r.jobId || r.requestId || r.id || '',
@@ -24,8 +19,37 @@ function mapJob(r: any): MaintenanceRequest {
     lat: r.location?.latitude || r.lat || 25.2048,
     lng: r.location?.longitude || r.lng || 55.2708,
     estimatedCost: r.quotedAmount || r.finalAmount || r.estimatedCost,
+    finalAmount: r.finalAmount,
     completedAt: r.completedAt,
   };
+}
+
+function isToday(dateStr?: string): boolean {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return d.toDateString() === now.toDateString();
+}
+
+async function fetchHandymanRating(handymanId: string, token: string | null): Promise<number> {
+  const response = await api.get<any[] | { average?: number; reviews?: any[] }>(
+    `/reviews/handyman/${handymanId}`,
+    token,
+  );
+  if (response.error || !response.data) return 0;
+
+  const data = response.data;
+  if (Array.isArray(data)) {
+    if (data.length === 0) return 0;
+    const sum = data.reduce((acc, r) => acc + (r.rating ?? r.score ?? 0), 0);
+    return Math.round((sum / data.length) * 10) / 10;
+  }
+  if (typeof data.average === 'number') return data.average;
+  if (Array.isArray(data.reviews) && data.reviews.length > 0) {
+    const sum = data.reviews.reduce((acc, r) => acc + (r.rating ?? r.score ?? 0), 0);
+    return Math.round((sum / data.reviews.length) * 10) / 10;
+  }
+  return 0;
 }
 
 export const jobService = {
@@ -107,18 +131,32 @@ export const jobService = {
   },
 
   async getStats(): Promise<HandymanStats> {
-    const active = await this.getActiveJobs().catch(() => []);
-    const completed = await this.getCompletedJobs().catch(() => []);
+    const token = await authService.getToken();
+    const profileResponse = await api.get<any>('/handymen/profile', token);
+    const handymanId = profileResponse.data?.handymanId;
+
+    const [active, completed] = await Promise.all([
+      this.getActiveJobs().catch(() => []),
+      this.getCompletedJobs().catch(() => []),
+    ]);
+
+    const completedToday = completed.filter((j) => isToday(j.completedAt));
+    const earningsToday = completedToday.reduce((sum, j) => {
+      const amount = j.finalAmount ?? j.estimatedCost ?? 0;
+      return sum + amount;
+    }, 0);
+
+    let rating = profileResponse.data?.rating ?? 0;
+    if (handymanId) {
+      const reviewRating = await fetchHandymanRating(handymanId, token);
+      if (reviewRating > 0) rating = reviewRating;
+    }
+
     return {
       pendingJobs: active.length,
-      completedToday: completed.filter((j) => {
-        if (!j.completedAt) return false;
-        const d = new Date(j.completedAt);
-        const now = new Date();
-        return d.toDateString() === now.toDateString();
-      }).length,
-      earningsToday: 0,
-      rating: 0,
+      completedToday: completedToday.length,
+      earningsToday: Math.round(earningsToday),
+      rating,
       totalCompleted: completed.length,
     };
   },

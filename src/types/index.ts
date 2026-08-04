@@ -1,7 +1,14 @@
 // TypeScript types for HandyGo Handyman Mobile App
 
 export type ServiceCategory = 'plumbing' | 'electrical' | 'ac' | 'general';
-export type JobStatus = 'pending' | 'assigned' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
+export type JobStatus =
+  | 'pending'
+  | 'assigned'
+  | 'accepted'
+  | 'en_route'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled';
 
 export interface User {
   id: string;
@@ -9,6 +16,7 @@ export interface User {
   firstName: string;
   lastName: string;
   phone?: string;
+  role?: string;
   profileImageUrl?: string;
   createdAt: string;
 }
@@ -44,6 +52,7 @@ export interface MaintenanceRequest {
   lat: number;
   lng: number;
   estimatedCost?: number;
+  finalAmount?: number;
   completedAt?: string;
   distance?: number;
   estimatedTravelTime?: string;

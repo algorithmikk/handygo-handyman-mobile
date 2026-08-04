@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, RefreshControl, Linking, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Wrench, Clock, CheckCircle, DollarSign, Star, ToggleLeft, ToggleRight, MapPin, Phone, Navigation, ChevronRight } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
+import { Wrench, Clock, CheckCircle, DollarSign, Star, ToggleLeft, ToggleRight, MapPin, Phone, Navigation } from 'lucide-react-native';
 import { useAuth } from '@/src/context/AuthContext';
 import { jobService } from '@/src/services/jobService';
 import { getCategoryInfo, getStatusColor } from '@/src/lib/mockData';
@@ -10,8 +11,9 @@ import { Colors } from '@/constants/Colors';
 import type { MaintenanceRequest, HandymanStats } from '@/src/types';
 
 export default function HomeScreen() {
-  const { user, isAuthenticated } = useAuth();
-  const [isAvailable, setIsAvailable] = useState(true);
+  const { t } = useTranslation();
+  const { user, handyman, isAuthenticated } = useAuth();
+  const [isAvailable, setIsAvailable] = useState(handyman?.available ?? true);
   const [stats, setStats] = useState<HandymanStats | null>(null);
   const [activeJobs, setActiveJobs] = useState<MaintenanceRequest[]>([]);
   const [availableJobs, setAvailableJobs] = useState<MaintenanceRequest[]>([]);
@@ -25,6 +27,12 @@ export default function HomeScreen() {
     }
     loadData();
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (handyman != null) {
+      setIsAvailable(handyman.available);
+    }
+  }, [handyman?.available]);
 
   const loadData = async () => {
     try {
@@ -85,8 +93,8 @@ export default function HomeScreen() {
               <Wrench size={20} color={Colors.white} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>HandyGo</Text>
-              <Text style={styles.headerSubtitle}>Technician Portal</Text>
+              <Text style={styles.headerTitle}>{t('home.title')}</Text>
+              <Text style={styles.headerSubtitle}>{t('home.subtitle')}</Text>
             </View>
           </View>
         </View>
@@ -100,10 +108,12 @@ export default function HomeScreen() {
             <View>
               <Text style={styles.profileName}>{user?.firstName} {user?.lastName}</Text>
               <View style={styles.ratingRow}>
-                <Star size={14} color="#fbbf24" fill="#fbbf24" />
-                <Text style={styles.ratingText}>{stats?.rating || 4.8}</Text>
+                <Star size={14} color="#fbbf24" fill={stats?.rating ? '#fbbf24' : 'transparent'} />
+                <Text style={styles.ratingText}>
+                  {stats?.rating && stats.rating > 0 ? stats.rating.toFixed(1) : t('home.noRating')}
+                </Text>
                 <Text style={styles.ratingDot}>·</Text>
-                <Text style={styles.ratingText}>{stats?.totalCompleted || 0} jobs</Text>
+                <Text style={styles.ratingText}>{t('home.jobsCount', { count: stats?.totalCompleted || 0 })}</Text>
               </View>
             </View>
           </View>
@@ -113,7 +123,7 @@ export default function HomeScreen() {
           >
             {isAvailable ? <ToggleRight size={20} color={Colors.primary[400]} /> : <ToggleLeft size={20} color={Colors.gray[400]} />}
             <Text style={[styles.statusText, isAvailable ? styles.statusTextOnline : styles.statusTextOffline]}>
-              {isAvailable ? 'Online' : 'Offline'}
+              {isAvailable ? t('home.online') : t('home.offline')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -123,17 +133,17 @@ export default function HomeScreen() {
           <View style={styles.statCard}>
             <Clock size={22} color="#fbbf24" />
             <Text style={styles.statNumber}>{stats?.pendingJobs || 0}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={styles.statLabel}>{t('home.pending')}</Text>
           </View>
           <View style={styles.statCard}>
             <CheckCircle size={22} color={Colors.primary[400]} />
             <Text style={styles.statNumber}>{stats?.completedToday || 0}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={styles.statLabel}>{t('home.completed')}</Text>
           </View>
           <View style={styles.statCard}>
             <DollarSign size={22} color="#60a5fa" />
             <Text style={styles.statNumber}>{stats?.earningsToday || 0}</Text>
-            <Text style={styles.statLabel}>AED Today</Text>
+            <Text style={styles.statLabel}>{t('home.earningsToday')}</Text>
           </View>
         </View>
 
@@ -141,7 +151,7 @@ export default function HomeScreen() {
         {activeJob && (
           <View style={styles.activeJobCard}>
             <View style={styles.activeJobHeader}>
-              <Text style={styles.activeJobLabel}>ACTIVE JOB</Text>
+              <Text style={styles.activeJobLabel}>{t('home.activeJob')}</Text>
               <Text style={styles.activeJobTime}>
                 {new Date(activeJob.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
@@ -161,22 +171,22 @@ export default function HomeScreen() {
             <View style={styles.actionRow}>
               <TouchableOpacity style={styles.actionButton} onPress={() => Linking.openURL(`tel:${activeJob.tenantPhone}`)}>
                 <Phone size={16} color={Colors.white} />
-                <Text style={styles.actionButtonText}>Call</Text>
+                <Text style={styles.actionButtonText}>{t('home.call')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${activeJob.lat},${activeJob.lng}`)}
               >
                 <Navigation size={16} color={Colors.white} />
-                <Text style={styles.actionButtonText}>Navigate</Text>
+                <Text style={styles.actionButtonText}>{t('home.navigate')}</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity
               style={styles.completeButton}
-              onPress={async () => { await jobService.completeJob(activeJob.id); await loadData(); }}
+              onPress={() => router.push(`/job/${activeJob.id}`)}
             >
               <CheckCircle size={18} color={Colors.white} />
-              <Text style={styles.completeButtonText}>Mark as Complete</Text>
+              <Text style={styles.completeButtonText}>{t('home.markComplete')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -184,7 +194,7 @@ export default function HomeScreen() {
         {/* Available Jobs */}
         {!activeJob && availableJobs.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>AVAILABLE JOBS</Text>
+            <Text style={styles.sectionTitle}>{t('home.availableJobs')}</Text>
             {availableJobs.map((job) => {
               const cat = getCategoryInfo(job.category);
               return (
@@ -205,7 +215,7 @@ export default function HomeScreen() {
                     <Text style={styles.distanceText}>{job.distance} km · ~{job.estimatedTravelTime}</Text>
                   )}
                   <TouchableOpacity style={styles.acceptButton} onPress={() => handleAcceptJob(job.id)}>
-                    <Text style={styles.acceptButtonText}>Accept Job</Text>
+                    <Text style={styles.acceptButtonText}>{t('home.acceptJob')}</Text>
                   </TouchableOpacity>
                 </TouchableOpacity>
               );
@@ -219,8 +229,8 @@ export default function HomeScreen() {
             <View style={styles.emptyIcon}>
               <CheckCircle size={32} color={Colors.gray[600]} />
             </View>
-            <Text style={styles.emptyTitle}>No pending jobs</Text>
-            <Text style={styles.emptySubtitle}>New jobs will appear here</Text>
+            <Text style={styles.emptyTitle}>{t('home.noPendingJobs')}</Text>
+            <Text style={styles.emptySubtitle}>{t('home.newJobsHint')}</Text>
           </View>
         )}
 
@@ -273,17 +283,17 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   actionButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, backgroundColor: Colors.slate[700], borderRadius: 10 },
   actionButtonText: { fontSize: 14, color: Colors.white, fontWeight: '500' },
-  completeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, backgroundColor: Colors.primary[500], borderRadius: 12 },
-  completeButtonText: { fontSize: 15, color: Colors.white, fontWeight: '600' },
+  completeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, backgroundColor: Colors.primary[500], borderRadius: 14 },
+  completeButtonText: { fontSize: 15, color: Colors.white, fontWeight: '700' },
   section: { marginHorizontal: 20 },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: Colors.gray[400], letterSpacing: 1, marginBottom: 12 },
   jobCard: { backgroundColor: Colors.slate[800], borderRadius: 16, borderWidth: 1, borderColor: Colors.gray[700], padding: 16, marginBottom: 12 },
   jobCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   distanceText: { fontSize: 12, color: Colors.teal[400], marginBottom: 12 },
-  acceptButton: { backgroundColor: Colors.primary[500], borderRadius: 10, padding: 12, alignItems: 'center' },
-  acceptButtonText: { fontSize: 15, color: Colors.white, fontWeight: '600' },
-  emptyState: { alignItems: 'center', paddingVertical: 48 },
-  emptyIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.slate[800], alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  emptyTitle: { fontSize: 16, color: Colors.gray[400] },
-  emptySubtitle: { fontSize: 14, color: Colors.gray[500], marginTop: 4 },
+  acceptButton: { backgroundColor: Colors.primary[500], borderRadius: 14, height: 52, alignItems: 'center', justifyContent: 'center' },
+  acceptButtonText: { fontSize: 15, color: Colors.white, fontWeight: '700' },
+  emptyState: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 32, gap: 8 },
+  emptyIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.slate[800], borderWidth: 1, borderColor: Colors.gray[700], alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: Colors.gray[400], textAlign: 'center' },
+  emptySubtitle: { fontSize: 14, color: Colors.gray[500], textAlign: 'center', lineHeight: 20 },
 });

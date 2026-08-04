@@ -1,20 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Switch, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { User, Star, Wrench, CheckCircle, Bell, Globe, ChevronRight, LogOut, Shield, FileText } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { Star, Wrench, CheckCircle, Bell, Globe, ChevronRight, LogOut, Shield, FileText, CreditCard } from 'lucide-react-native';
 import { useAuth } from '@/src/context/AuthContext';
 import { jobService } from '@/src/services/jobService';
+import { notificationService } from '@/src/services/notificationService';
+import { startStripeConnectOnboarding } from '@/src/services/paymentService';
 import { SERVICE_CATEGORIES } from '@/src/lib/mockData';
 import { Colors } from '@/constants/Colors';
 import type { HandymanStats } from '@/src/types';
 
+function formatRating(rating: number, noRatingLabel: string): string {
+  if (!rating || rating <= 0) return noRatingLabel;
+  return rating.toFixed(1);
+}
+
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user, handyman, logout } = useAuth();
   const [stats, setStats] = useState<HandymanStats | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [stripeLoading, setStripeLoading] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -25,13 +34,51 @@ export default function ProfileScreen() {
     setStats(data);
   };
 
+  const handleNotificationsToggle = async (enabled: boolean) => {
+    if (!enabled) {
+      setNotificationsEnabled(false);
+      return;
+    }
+    try {
+      await notificationService.setupAndroidChannel();
+      const pushToken = await notificationService.registerForPushNotifications();
+      if (!pushToken) {
+        Alert.alert(t('profile.notificationsError'));
+        setNotificationsEnabled(false);
+        return;
+      }
+      await jobService.registerPushToken(pushToken);
+      setNotificationsEnabled(true);
+      Alert.alert(t('profile.notificationsEnabled'));
+    } catch {
+      Alert.alert(t('profile.notificationsError'));
+      setNotificationsEnabled(false);
+    }
+  };
+
+  const handleStripeConnect = async () => {
+    setStripeLoading(true);
+    try {
+      const url = await startStripeConnectOnboarding();
+      await WebBrowser.openBrowserAsync(url);
+    } catch {
+      Alert.alert(t('profile.stripeConnectError'));
+    } finally {
+      setStripeLoading(false);
+    }
+  };
+
   const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: async () => {
-        await logout();
-        router.replace('/(auth)/login');
-      }},
+    Alert.alert(t('profile.logoutTitle'), t('profile.logoutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('profile.logout'),
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/(auth)/login');
+        },
+      },
     ]);
   };
 
@@ -40,15 +87,19 @@ export default function ProfileScreen() {
     i18n.changeLanguage(newLang);
   };
 
+  const displayServices = handyman?.services?.length
+    ? SERVICE_CATEGORIES.filter((cat) => handyman.services.includes(cat.id))
+    : SERVICE_CATEGORIES;
+
+  const ratingDisplay = formatRating(stats?.rating ?? handyman?.rating ?? 0, t('profile.noRating'));
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t('profile.title')}</Text>
         </View>
 
-        {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarLarge}>
             <Text style={styles.avatarText}>{user?.firstName?.charAt(0) || 'H'}{user?.lastName?.charAt(0) || 'G'}</Text>
@@ -57,11 +108,10 @@ export default function ProfileScreen() {
           <Text style={styles.profileEmail}>{user?.email}</Text>
           {user?.phone && <Text style={styles.profilePhone}>{user.phone}</Text>}
 
-          {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Star size={18} color="#fbbf24" fill="#fbbf24" />
-              <Text style={styles.statValue}>{stats?.rating || 4.8}</Text>
+              <Star size={18} color="#fbbf24" fill={stats?.rating ? '#fbbf24' : 'transparent'} />
+              <Text style={styles.statValue}>{ratingDisplay}</Text>
               <Text style={styles.statLabel}>{t('profile.rating')}</Text>
             </View>
             <View style={styles.statDivider} />
@@ -73,11 +123,10 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Services */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('profile.services')}</Text>
           <View style={styles.servicesGrid}>
-            {SERVICE_CATEGORIES.map((cat) => (
+            {displayServices.map((cat) => (
               <View key={cat.id} style={[styles.serviceChip, { borderColor: cat.color + '40' }]}>
                 <Text style={styles.serviceIcon}>{cat.icon}</Text>
                 <Text style={styles.serviceLabel}>{cat.label}</Text>
@@ -86,7 +135,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
 
@@ -97,9 +145,10 @@ export default function ProfileScreen() {
             </View>
             <Switch
               value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              onValueChange={handleNotificationsToggle}
               trackColor={{ false: Colors.gray[700], true: Colors.primary[500] + '60' }}
               thumbColor={notificationsEnabled ? Colors.primary[500] : Colors.gray[400]}
+              accessibilityLabel={t('profile.notifications')}
             />
           </View>
 
@@ -114,14 +163,35 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={handleStripeConnect}
+            disabled={stripeLoading}
+            accessibilityRole="button"
+            accessibilityLabel={t('profile.stripeConnect')}
+          >
+            <View style={styles.settingLeft}>
+              <CreditCard size={20} color={Colors.gray[400]} />
+              <View>
+                <Text style={styles.settingLabel}>{t('profile.stripeConnect')}</Text>
+                <Text style={styles.settingHint}>{t('profile.stripeConnectHint')}</Text>
+              </View>
+            </View>
+            {stripeLoading ? (
+              <ActivityIndicator color={Colors.primary[400]} />
+            ) : (
+              <ChevronRight size={18} color={Colors.gray[500]} />
+            )}
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <Shield size={20} color={Colors.gray[400]} />
-              <Text style={styles.settingLabel}>Verification</Text>
+              <Text style={styles.settingLabel}>{t('profile.verification')}</Text>
             </View>
             <View style={styles.settingRight}>
               <View style={styles.verifiedBadge}>
-                <Text style={styles.verifiedText}>Verified</Text>
+                <Text style={styles.verifiedText}>{t('profile.verified')}</Text>
               </View>
               <ChevronRight size={18} color={Colors.gray[500]} />
             </View>
@@ -130,13 +200,12 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <FileText size={20} color={Colors.gray[400]} />
-              <Text style={styles.settingLabel}>Documents</Text>
+              <Text style={styles.settingLabel}>{t('profile.documents')}</Text>
             </View>
             <ChevronRight size={18} color={Colors.gray[500]} />
           </TouchableOpacity>
         </View>
 
-        {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <LogOut size={20} color={Colors.red[400]} />
           <Text style={styles.logoutText}>{t('profile.logout')}</Text>
@@ -161,7 +230,7 @@ const styles = StyleSheet.create({
   profilePhone: { fontSize: 14, color: Colors.gray[400], marginTop: 2 },
   statsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: Colors.gray[700], width: '100%' },
   statItem: { flex: 1, alignItems: 'center', gap: 4 },
-  statValue: { fontSize: 20, fontWeight: 'bold', color: Colors.white },
+  statValue: { fontSize: 16, fontWeight: 'bold', color: Colors.white, textAlign: 'center' },
   statLabel: { fontSize: 12, color: Colors.gray[400] },
   statDivider: { width: 1, height: 40, backgroundColor: Colors.gray[700] },
   section: { marginHorizontal: 20, marginBottom: 20 },
@@ -171,8 +240,9 @@ const styles = StyleSheet.create({
   serviceIcon: { fontSize: 16 },
   serviceLabel: { fontSize: 13, color: Colors.gray[300] },
   settingItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.slate[800], borderRadius: 12, padding: 16, marginBottom: 8 },
-  settingLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  settingLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   settingLabel: { fontSize: 15, color: Colors.white },
+  settingHint: { fontSize: 12, color: Colors.gray[500], marginTop: 2 },
   settingRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   settingValue: { fontSize: 14, color: Colors.gray[400] },
   verifiedBadge: { backgroundColor: Colors.primary[500] + '20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },

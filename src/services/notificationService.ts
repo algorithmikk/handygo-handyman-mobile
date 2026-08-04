@@ -2,8 +2,20 @@
 
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function resolveProjectId(): string | undefined {
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+  if (projectId && UUID_RE.test(projectId)) {
+    return projectId;
+  }
+  return undefined;
+}
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -11,6 +23,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -24,11 +38,9 @@ export const notificationService = {
       return null;
     }
 
-    // Check existing permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
-    // Request permission if not granted
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
@@ -39,13 +51,11 @@ export const notificationService = {
       return null;
     }
 
-    // Get Expo push token
     try {
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId:
-          process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
-          'handygo-handyman-mobile',
-      });
+      const projectId = resolveProjectId();
+      const tokenData = projectId
+        ? await Notifications.getExpoPushTokenAsync({ projectId })
+        : await Notifications.getExpoPushTokenAsync();
       console.log('Push token:', tokenData.data);
       return tokenData.data;
     } catch (e) {
@@ -104,8 +114,10 @@ export const notificationService = {
         data: { jobId: 'r1' },
         sound: 'default',
       },
-      trigger: { seconds: 3 },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 3,
+      },
     });
   },
 };
-

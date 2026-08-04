@@ -36,7 +36,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
           headerShown: false,
         }}
@@ -44,7 +44,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="map"
         options={{
-          title: 'Map',
+          title: t('tabs.map'),
           tabBarIcon: ({ color, size }) => <Map size={size} color={color} />,
           headerShown: false,
         }}
@@ -52,7 +52,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="jobs"
         options={{
-          title: 'Jobs',
+          title: t('tabs.jobs'),
           tabBarIcon: ({ color, size }) => <ClipboardList size={size} color={color} />,
           headerShown: false,
         }}
@@ -60,7 +60,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
           headerShown: false,
         }}

@@ -3,10 +3,14 @@ import Constants from 'expo-constants';
 
 const TOKEN_KEY = 'handygo_jwt_token';
 const extra = Constants.expoConfig?.extra ?? {};
+
+const DEFAULT_API_BASE_URL = 'https://handygo.vercel.app/backend/api/v1';
+
 const API_BASE_URL =
-  (extra.apiBaseUrl as string) ||
   process.env.EXPO_PUBLIC_API_BASE_URL ||
-  'https://api.handygo.ae/api/v1';
+  process.env.EXPO_PUBLIC_API_URL ||
+  (extra.apiBaseUrl as string) ||
+  DEFAULT_API_BASE_URL;
 
 interface RequestOptions {
   method?: string;
