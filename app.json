@@ -20,7 +20,8 @@
         "NSLocationWhenInUseUsageDescription": "HandyGo needs your location to show nearby jobs and provide navigation to job sites.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "HandyGo uses your location in the background to update your availability and match you with nearby jobs.",
         "NSCameraUsageDescription": "HandyGo needs camera access to take photos of completed work.",
-        "NSPhotoLibraryUsageDescription": "HandyGo needs photo library access to upload job completion photos."
+        "NSPhotoLibraryUsageDescription": "HandyGo needs photo library access to upload job completion photos.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
