@@ -96,7 +96,7 @@ export default function LoginScreen() {
 
             {/* Demo credentials hint */}
             <View style={styles.demoHint}>
-              <Text style={styles.demoText}>Demo: handyman@handygo.ae / handyman123</Text>
+              <Text style={styles.demoText}>Demo: handyman@pilot.handygo.ae / PilotHandy123!</Text>
             </View>
 
             <View style={styles.signupContainer}>
